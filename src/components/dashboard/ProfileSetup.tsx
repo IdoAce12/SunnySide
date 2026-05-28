@@ -25,15 +25,15 @@ export function ProfileSetup({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Physiological profile</CardTitle>
+        <CardTitle>Your skin profile</CardTitle>
         <CardDescription>
           Fitzpatrick classification &amp; UVB attenuation via sunscreen.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-zinc-500">
-            <User className="size-3.5" strokeWidth={1.75} />
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <User className="size-3.5" strokeWidth={2} />
             Skin phototype
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -43,14 +43,14 @@ export function ProfileSetup({
                 type="button"
                 onClick={() => onChange({ skinType: t, spf })}
                 className={cn(
-                  "rounded-lg border px-4 py-3 text-left transition",
+                  "rounded-xl border px-4 py-3 text-left transition",
                   t === skinType
-                    ? "border-amber-800/60 bg-amber-950/30"
-                    : "border-zinc-800 bg-zinc-950/40 hover:border-zinc-700",
+                    ? "border-amber-300 bg-amber-50 ring-1 ring-amber-200"
+                    : "border-stone-200 bg-white hover:border-sky-200 hover:bg-sky-50/40",
                 )}
               >
-                <div className="text-sm font-medium text-zinc-100">Type {t}</div>
-                <div className="mt-0.5 text-xs leading-snug text-zinc-500">
+                <div className="text-sm font-semibold text-slate-900">Type {t}</div>
+                <div className="mt-0.5 text-xs leading-snug text-slate-500">
                   {getSkinTypeLabel(t).replace(/^Type [IVX]+ — /, "")}
                 </div>
               </button>
@@ -59,8 +59,8 @@ export function ProfileSetup({
         </section>
 
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-zinc-500">
-            <Shield className="size-3.5" strokeWidth={1.75} />
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <Shield className="size-3.5" strokeWidth={2} />
             Sunscreen
           </div>
           <div className="flex flex-wrap gap-2">
@@ -70,15 +70,15 @@ export function ProfileSetup({
                 type="button"
                 onClick={() => onChange({ skinType, spf: choice })}
                 className={cn(
-                  "rounded-lg border px-3 py-2 text-sm transition",
+                  "rounded-xl border px-3 py-2 text-sm transition",
                   choice === spf
-                    ? "border-amber-800/60 bg-amber-950/30 text-zinc-100"
-                    : "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:border-zinc-700",
+                    ? "border-amber-300 bg-amber-50 text-slate-900 ring-1 ring-amber-200"
+                    : "border-stone-200 bg-white text-slate-500 hover:border-sky-200 hover:bg-sky-50/40",
                 )}
               >
-                <span className="font-medium">{sunscreenLabel(choice)}</span>
+                <span className="font-semibold">{sunscreenLabel(choice)}</span>
                 {choice !== "none" ? (
-                  <span className="ml-1.5 text-xs text-zinc-500">
+                  <span className="ml-1.5 text-xs text-slate-400">
                     {getSpfBlockPercent(choice)}% UVB
                   </span>
                 ) : null}

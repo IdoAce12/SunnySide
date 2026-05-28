@@ -46,8 +46,12 @@ export const DEFAULT_COORDS = TEL_AVIV_COORDS;
 
 const FORECAST_BASE = "https://api.open-meteo.com/v1/forecast";
 const MARINE_BASE = "https://marine-api.open-meteo.com/v1/marine";
-const CACHE_KEY = "sunnyside:weather:tel-aviv-v1";
+const CACHE_PREFIX = "sunnyside:weather:v2:";
 const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function cacheKey(latitude: number, longitude: number): string {
+  return `${CACHE_PREFIX}${latitude.toFixed(2)},${longitude.toFixed(2)}`;
+}
 
 function currentHourIndex(times: string[]): number {
   const now = new Date();
@@ -75,34 +79,43 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function loadCachedTelAvivWeather(): WeatherMarineSnapshot | null {
+export function loadCachedWeather(
+  latitude: number,
+  longitude: number,
+): WeatherMarineSnapshot | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(CACHE_KEY);
+    const raw = window.localStorage.getItem(cacheKey(latitude, longitude));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { savedAt: number; data: WeatherMarineSnapshot };
-    if (Date.now() - parsed.savedAt > CACHE_MAX_AGE_MS) return parsed.data; // still use stale offline
-    return parsed.data;
+    return parsed.data; // stale data still useful when offline
   } catch {
     return null;
   }
 }
 
-export function saveCachedTelAvivWeather(data: WeatherMarineSnapshot): void {
+export function saveCachedWeather(data: WeatherMarineSnapshot): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(
-    CACHE_KEY,
+    cacheKey(data.latitude, data.longitude),
     JSON.stringify({ savedAt: Date.now(), data }),
   );
 }
 
-/** Static Tel Aviv beach profile when network & cache are unavailable. */
-export function createTelAvivFallbackWeather(): WeatherMarineSnapshot {
+function isCacheFresh(data: WeatherMarineSnapshot): boolean {
+  return Date.now() - data.fetchedAt < CACHE_MAX_AGE_MS;
+}
+
+/** Day/night-aware static fallback for any location. */
+export function createFallbackWeather(
+  latitude: number = TEL_AVIV_COORDS.latitude,
+  longitude: number = TEL_AVIV_COORDS.longitude,
+): WeatherMarineSnapshot {
   const hour = new Date().getHours();
   const isDaytime = hour >= 6 && hour < 19;
   return {
-    latitude: TEL_AVIV_COORDS.latitude,
-    longitude: TEL_AVIV_COORDS.longitude,
+    latitude,
+    longitude,
     uvIndex: isDaytime ? 6.5 : 0,
     airTempC: 27,
     waterTempC: 24,
@@ -114,21 +127,24 @@ export function createTelAvivFallbackWeather(): WeatherMarineSnapshot {
   };
 }
 
-/** @deprecated Use createTelAvivFallbackWeather */
-export function createFallbackWeather(
-  lat: number = TEL_AVIV_COORDS.latitude,
-  lon: number = TEL_AVIV_COORDS.longitude,
-): WeatherMarineSnapshot {
-  const base = createTelAvivFallbackWeather();
-  return { ...base, latitude: lat, longitude: lon };
+/** Backward-compatible Tel Aviv helpers. */
+export function loadCachedTelAvivWeather(): WeatherMarineSnapshot | null {
+  return loadCachedWeather(TEL_AVIV_COORDS.latitude, TEL_AVIV_COORDS.longitude);
 }
 
-function resolveOfflineWeather(): WeatherMarineSnapshot {
-  const cached = loadCachedTelAvivWeather();
+export function createTelAvivFallbackWeather(): WeatherMarineSnapshot {
+  return createFallbackWeather(TEL_AVIV_COORDS.latitude, TEL_AVIV_COORDS.longitude);
+}
+
+function resolveOfflineWeather(
+  latitude: number,
+  longitude: number,
+): WeatherMarineSnapshot {
+  const cached = loadCachedWeather(latitude, longitude);
   if (cached) {
     return { ...cached, source: "fallback" as const, fetchedAt: Date.now() };
   }
-  return createTelAvivFallbackWeather();
+  return createFallbackWeather(latitude, longitude);
 }
 
 export async function fetchWeatherMarine(
@@ -137,14 +153,13 @@ export async function fetchWeatherMarine(
   options?: { forceOffline?: boolean },
 ): Promise<WeatherFetchResult> {
   if (options?.forceOffline || (typeof navigator !== "undefined" && !navigator.onLine)) {
-    const data = resolveOfflineWeather();
     return {
       ok: false,
       error: {
         code: "OFFLINE",
-        message: "Device is offline. Using cached Tel Aviv beach data.",
+        message: "Device is offline. Showing cached coastal data.",
       },
-      data,
+      data: resolveOfflineWeather(latitude, longitude),
       fromCache: true,
     };
   }
@@ -173,11 +188,10 @@ export async function fetchWeatherMarine(
     ]);
 
     if (forecast.status !== "fulfilled") {
-      const data = resolveOfflineWeather();
       return {
         ok: false,
         error: { code: "NETWORK", message: "Unable to reach weather services." },
-        data,
+        data: resolveOfflineWeather(latitude, longitude),
         fromCache: true,
       };
     }
@@ -212,17 +226,18 @@ export async function fetchWeatherMarine(
       source: "open-meteo",
     };
 
-    saveCachedTelAvivWeather(snapshot);
+    saveCachedWeather(snapshot);
 
     return { ok: true, data: snapshot, fromCache: false };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    const data = resolveOfflineWeather();
     return {
       ok: false,
       error: { code: "UNKNOWN", message },
-      data,
+      data: resolveOfflineWeather(latitude, longitude),
       fromCache: true,
     };
   }
 }
+
+export { isCacheFresh };

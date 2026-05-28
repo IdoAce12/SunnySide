@@ -55,18 +55,10 @@ export function ActiveTracker() {
 
   const noExposure = exposure?.noExposure ?? true;
   const safeLeft = exposure
-    ? remainingSafeMinutes(
-        exposure.safeExposureMinutes,
-        elapsedMinutes,
-        noExposure,
-      )
+    ? remainingSafeMinutes(exposure.safeExposureMinutes, elapsedMinutes, noExposure)
     : 0;
   const progressPct = exposure
-    ? safeExposureProgressPercent(
-        exposure.safeExposureMinutes,
-        elapsedMinutes,
-        noExposure,
-      )
+    ? safeExposureProgressPercent(exposure.safeExposureMinutes, elapsedMinutes, noExposure)
     : 0;
 
   const flipInterval = active?.flipIntervalMinutes ?? 15;
@@ -114,16 +106,18 @@ export function ActiveTracker() {
     return (
       <div className="space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Active tracker</h1>
-          <p className="mt-1 text-sm text-zinc-500">No session in progress.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Active tracker
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">No session in progress.</p>
         </header>
         <Card>
           <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-zinc-400">
-              Initialize a session from the command center to begin precision tracking.
+            <p className="text-sm text-slate-500">
+              Start a session from the beach dashboard to begin precision tracking.
             </p>
             <Link href="/">
-              <Button variant="secondary">Command center</Button>
+              <Button variant="secondary">Beach dashboard</Button>
             </Link>
           </CardContent>
         </Card>
@@ -136,32 +130,32 @@ export function ActiveTracker() {
       <div className="space-y-8">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
               Live session
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+            <h1 className="text-3xl font-semibold tabular-nums tracking-tight text-slate-900">
               {formatElapsed(elapsedMs)}
             </h1>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-slate-500">
               {sunscreenLabel(active.setup.spf)} • UV {uvIndex.toFixed(1)} • Type{" "}
               {active.setup.skinType}
             </p>
           </div>
           <Button variant="danger" size="sm" onClick={handleFinishSession}>
-            <Square className="size-3.5" strokeWidth={1.75} />
+            <Square className="size-3.5" strokeWidth={2} />
             End session
           </Button>
         </header>
 
         {flipAlert ? (
           <div
-            className="flex items-center gap-3 rounded-lg border border-amber-900/40 bg-amber-950/30 px-4 py-3"
+            className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
             role="status"
           >
-            <FlipHorizontal2 className="size-4 text-amber-600/90" strokeWidth={1.75} />
+            <FlipHorizontal2 className="size-4 text-amber-500" strokeWidth={2} />
             <div>
-              <p className="text-sm font-medium text-zinc-100">Flip interval reached</p>
-              <p className="text-xs text-zinc-500">Rotate exposure surface — front / back.</p>
+              <p className="text-sm font-semibold text-slate-900">Flip interval reached</p>
+              <p className="text-xs text-slate-500">Rotate exposure surface — front / back.</p>
             </div>
           </div>
         ) : null}
@@ -170,7 +164,7 @@ export function ActiveTracker() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="size-4 text-amber-600/80" strokeWidth={1.75} />
+                <Shield className="size-4 text-amber-500" strokeWidth={2} />
                 Exposure budget
               </CardTitle>
               <CardDescription>MED-based safe limit remaining</CardDescription>
@@ -182,15 +176,14 @@ export function ActiveTracker() {
                 sublabel={noExposure ? "no exposure" : "min left"}
                 size={168}
                 stroke={7}
+                ringClassName="text-amber-500"
               />
               <div className="flex-1 space-y-3 text-sm">
                 <Row label="Total elapsed" value={formatElapsed(elapsedMs)} />
                 <Row
                   label="Safe limit"
                   value={
-                    noExposure
-                      ? "No exposure"
-                      : `${Math.round(exposure!.safeExposureMinutes)} min`
+                    noExposure ? "No exposure" : `${Math.round(exposure!.safeExposureMinutes)} min`
                   }
                 />
                 <Row label="SED rate" value={`${exposure!.sedPerMinute.toFixed(3)} /min`} />
@@ -205,7 +198,7 @@ export function ActiveTracker() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Timer className="size-4 text-zinc-500" strokeWidth={1.75} />
+                <Timer className="size-4 text-sky-500" strokeWidth={2} />
                 Flip cycle
               </CardTitle>
               <CardDescription>{flipInterval}-minute bilateral rotation</CardDescription>
@@ -217,7 +210,7 @@ export function ActiveTracker() {
                 sublabel="min to flip"
                 size={140}
                 stroke={6}
-                ringClassName="text-sky-600/70"
+                ringClassName="text-sky-500"
               />
               <div className="flex-1 space-y-3 text-sm">
                 <Row label="Cycle position" value={`${flipElapsed} / ${flipInterval} min`} />
@@ -230,7 +223,7 @@ export function ActiveTracker() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Droplets className="size-4 text-sky-500/80" strokeWidth={1.75} />
+              <Droplets className="size-4 text-sky-500" strokeWidth={2} />
               Fluid balance
             </CardTitle>
             <CardDescription>
@@ -241,11 +234,7 @@ export function ActiveTracker() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <FluidStat label="Logged" value={`${active.waterMlLogged}`} unit="mL" />
-              <FluidStat
-                label="Target"
-                value={`${hydration?.recommendedMl ?? 0}`}
-                unit="mL"
-              />
+              <FluidStat label="Target" value={`${hydration?.recommendedMl ?? 0}`} unit="mL" />
               <FluidStat
                 label="Deficit"
                 value={`${hydration?.deficitMl ?? 0}`}
@@ -257,7 +246,7 @@ export function ActiveTracker() {
               {[250, 500].map((ml) => (
                 <Button
                   key={ml}
-                  variant="secondary"
+                  variant="ocean"
                   size="sm"
                   onClick={() => logWater(ml)}
                   className="flex-1 sm:flex-none"
@@ -275,9 +264,9 @@ export function ActiveTracker() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-zinc-800/80 pb-2 last:border-0">
-      <span className="text-zinc-500">{label}</span>
-      <span className="font-medium tabular-nums text-zinc-200">{value}</span>
+    <div className="flex justify-between gap-4 border-b border-stone-100 pb-2 last:border-0">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-semibold tabular-nums text-slate-800">{value}</span>
     </div>
   );
 }
@@ -296,14 +285,14 @@ function FluidStat({
   return (
     <div
       className={cn(
-        "rounded-lg border border-zinc-800 bg-zinc-950/50 px-4 py-3",
-        warn && "border-amber-900/40",
+        "rounded-2xl border border-sky-100 bg-sky-50/40 px-4 py-3",
+        warn && "border-amber-200 bg-amber-50/60",
       )}
     >
-      <div className="text-[10px] uppercase tracking-widest text-zinc-600">{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums text-zinc-50">
+      <div className="text-[10px] uppercase tracking-widest text-slate-400">{label}</div>
+      <div className="mt-1 text-xl font-semibold tabular-nums text-slate-900">
         {value}
-        <span className="ml-1 text-xs font-normal text-zinc-500">{unit}</span>
+        <span className="ml-1 text-xs font-normal text-slate-400">{unit}</span>
       </div>
     </div>
   );

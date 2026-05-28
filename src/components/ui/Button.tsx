@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/utils/cn";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "gold";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "gold" | "ocean";
 type ButtonSize = "sm" | "md" | "icon";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,17 +12,19 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-medium tracking-tight transition " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/40 focus-visible:ring-offset-2 " +
-  "focus-visible:ring-offset-zinc-950 disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-tight transition " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 " +
+  "focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-40";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-zinc-100 text-zinc-950 hover:bg-white active:bg-zinc-200",
-  gold: "bg-amber-700/90 text-zinc-50 hover:bg-amber-600/90 active:bg-amber-800",
+  primary: "bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:bg-slate-950",
+  gold: "bg-amber-500 text-white shadow-sm hover:bg-amber-400 active:bg-amber-600",
+  ocean: "bg-sky-500 text-white shadow-sm hover:bg-sky-400 active:bg-sky-600",
   secondary:
-    "border border-zinc-800 bg-zinc-900/80 text-zinc-100 hover:bg-zinc-800/80 backdrop-blur-sm",
-  ghost: "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100",
-  danger: "bg-red-950/80 text-red-200 border border-red-900/50 hover:bg-red-900/40",
+    "border border-stone-200 bg-white text-slate-700 shadow-sm hover:bg-stone-50 active:bg-stone-100",
+  ghost: "text-slate-500 hover:bg-stone-100 hover:text-slate-900",
+  danger:
+    "border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 active:bg-rose-200",
 };
 
 const sizes: Record<ButtonSize, string> = {

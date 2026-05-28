@@ -46,10 +46,10 @@ export function SessionManager() {
     return (
       <div className="space-y-6">
         <header className="space-y-1">
-          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
             Session
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Checking conditions
           </h1>
         </header>

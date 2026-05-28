@@ -7,7 +7,8 @@ export function ProgressRing({
   size = 160,
   stroke = 6,
   className,
-  ringClassName = "text-amber-600/90",
+  ringClassName = "text-amber-500",
+  trackClassName = "text-stone-200",
   label,
   sublabel,
 }: {
@@ -16,6 +17,7 @@ export function ProgressRing({
   stroke?: number;
   className?: string;
   ringClassName?: string;
+  trackClassName?: string;
   label: string;
   sublabel?: string;
 }) {
@@ -34,7 +36,7 @@ export function ProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={stroke}
-          className="text-zinc-800"
+          className={trackClassName}
         />
         <circle
           cx={size / 2}
@@ -50,11 +52,11 @@ export function ProgressRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-2xl font-semibold tabular-nums tracking-tight text-zinc-50">
+        <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
           {label}
         </span>
         {sublabel ? (
-          <span className="mt-0.5 text-xs text-zinc-500">{sublabel}</span>
+          <span className="mt-0.5 text-xs text-slate-400">{sublabel}</span>
         ) : null}
       </div>
     </div>

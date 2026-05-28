@@ -6,10 +6,7 @@ export function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "animate-pulse rounded-lg bg-zinc-800/80",
-        className,
-      )}
+      className={cn("animate-pulse rounded-lg bg-stone-200/70", className)}
       {...props}
     />
   );
@@ -17,7 +14,7 @@ export function Skeleton({
 
 export function MetricSkeleton() {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 backdrop-blur-sm">
+    <div className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
       <Skeleton className="mb-3 h-3 w-16" />
       <Skeleton className="h-7 w-24" />
     </div>

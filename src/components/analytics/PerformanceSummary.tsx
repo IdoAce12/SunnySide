@@ -44,10 +44,10 @@ export function PerformanceSummary() {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
           Post-session intelligence
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Performance summary
         </h1>
       </header>
@@ -55,24 +55,28 @@ export function PerformanceSummary() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi
           icon={Timer}
+          accent="gold"
           label="Exposure time"
           value={`${totals.totalHours.toFixed(1)}h`}
           detail={`${totals.totalMinutes} min total`}
         />
         <Kpi
           icon={Sun}
+          accent="gold"
           label="Mean UV index"
           value={totals.sessionCount ? totals.avgUv.toFixed(1) : "—"}
           detail={`${totals.sessionCount} sessions`}
         />
         <Kpi
           icon={Activity}
+          accent="ocean"
           label="Cumulative SED"
           value={totals.totalSed.toFixed(2)}
           detail="Standard erythemal dose"
         />
         <Kpi
           icon={Droplets}
+          accent="ocean"
           label="Fluid balance"
           value={`${totals.totalMl} mL`}
           detail={
@@ -86,14 +90,14 @@ export function PerformanceSummary() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="size-4 text-zinc-500" strokeWidth={1.75} />
+            <TrendingUp className="size-4 text-sky-500" strokeWidth={2} />
             Session log
           </CardTitle>
           <CardDescription>Structural UV dose &amp; fluid records</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {history.length === 0 ? (
-            <p className="rounded-lg border border-zinc-800 bg-zinc-950/50 px-4 py-6 text-center text-sm text-zinc-500">
+            <p className="rounded-2xl border border-stone-200 bg-stone-50/60 px-4 py-8 text-center text-sm text-slate-500">
               Complete a session to generate your performance report.
             </p>
           ) : (
@@ -110,22 +114,25 @@ function Kpi({
   label,
   value,
   detail,
+  accent,
 }: {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   value: string;
   detail: string;
+  accent: "gold" | "ocean";
 }) {
+  const iconColor = accent === "gold" ? "text-amber-500" : "text-sky-500";
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm">
-      <Icon className="mb-3 size-4 text-zinc-500" strokeWidth={1.75} />
-      <div className="text-[10px] font-medium uppercase tracking-widest text-zinc-600">
+    <div className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+      <Icon className={`mb-3 size-4 ${iconColor}`} strokeWidth={2} />
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-zinc-50">
+      <div className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
         {value}
       </div>
-      <div className="mt-1 text-xs text-zinc-500">{detail}</div>
+      <div className="mt-1 text-xs text-slate-500">{detail}</div>
     </div>
   );
 }
@@ -137,16 +144,16 @@ function SessionRow({ session: s }: { session: CompletedSessionRecord }) {
       : null;
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium text-zinc-200">
+        <span className="text-sm font-semibold text-slate-900">
           {new Date(s.startedAt).toLocaleDateString(undefined, {
             weekday: "short",
             month: "short",
             day: "numeric",
           })}
         </span>
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-slate-400">
           {getSkinTypeShort(s.setup.skinType)} • {sunscreenLabel(s.setup.spf)}
         </span>
       </div>
@@ -160,7 +167,7 @@ function SessionRow({ session: s }: { session: CompletedSessionRecord }) {
           sub={balance != null ? `${balance}% of target` : undefined}
         />
       </div>
-      <div className="mt-2 text-[11px] text-zinc-600">
+      <div className="mt-2 text-[11px] text-slate-400">
         MED {s.medJPerM2 ?? "—"} J/m² • Limit {Math.round(s.safeExposureMinutes ?? 0)} min
       </div>
     </div>
@@ -178,9 +185,9 @@ function Cell({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-widest text-zinc-600">{label}</div>
-      <div className="text-sm font-medium tabular-nums text-zinc-200">{value}</div>
-      {sub ? <div className="text-[10px] text-zinc-600">{sub}</div> : null}
+      <div className="text-[10px] uppercase tracking-widest text-slate-400">{label}</div>
+      <div className="text-sm font-semibold tabular-nums text-slate-800">{value}</div>
+      {sub ? <div className="text-[10px] text-slate-400">{sub}</div> : null}
     </div>
   );
 }

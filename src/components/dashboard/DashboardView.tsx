@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import { LocationPicker } from "@/components/dashboard/LocationPicker";
 import { PremiumMetrics } from "@/components/dashboard/PremiumMetrics";
 import { ProfileSetup } from "@/components/dashboard/ProfileSetup";
 import { ExposureEstimate } from "@/components/dashboard/ExposureEstimate";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { useWeather } from "@/hooks/useWeather";
+import { DEFAULT_LOCATION, type CoastalLocation } from "@/services/locations";
 import type { ActiveSessionState } from "@/utils/sessionTypes";
 import type { FitzpatrickSkinType, SunscreenChoice } from "@/utils/sunCalc";
 import { calculateSafeExposure } from "@/utils/sunCalc";
@@ -21,7 +23,12 @@ const DEFAULT_SKIN: FitzpatrickSkinType = 3;
 const DEFAULT_SPF: SunscreenChoice = 30;
 
 export function DashboardView() {
-  const { status, weather, error, isOffline, refresh } = useWeather();
+  const [location, setLocation] = React.useState<CoastalLocation>(DEFAULT_LOCATION);
+  const { status, weather, error, isOffline, refresh } = useWeather({
+    latitude: location.latitude,
+    longitude: location.longitude,
+  });
+
   const [setup, setSetup] = React.useState<{
     skinType: FitzpatrickSkinType;
     spf: SunscreenChoice;
@@ -40,7 +47,7 @@ export function DashboardView() {
   });
 
   const canStartSession =
-    weather && !calc.noExposure && !isZeroUvIndex(uvIndex) && !isOffline;
+    !!weather && !calc.noExposure && !isZeroUvIndex(uvIndex) && !isOffline;
 
   const startSession = () => {
     if (!weather || !canStartSession) return;
@@ -55,15 +62,22 @@ export function DashboardView() {
   };
 
   return (
-    <div className="space-y-8">
-      {isOffline ? <OfflineBanner /> : null}
+    <div className="space-y-6">
+      {isOffline ? <OfflineBanner locationName={location.name} /> : null}
 
       <header className="space-y-1">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Performance tracker • Tel Aviv default
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
+          Luxury beach resort tracker
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Command center</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          Good day for the beach
+        </h1>
+        <p className="text-sm text-slate-500">
+          Pick your destination and dial in safe, beautiful time in the sun.
+        </p>
       </header>
+
+      <LocationPicker selected={location} onSelect={setLocation} />
 
       <ErrorBoundary>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -85,6 +99,7 @@ export function DashboardView() {
             <PremiumMetrics
               status={status}
               weather={weather}
+              locationName={`${location.name}, ${location.country}`}
               errorMessage={error?.message}
               onRetry={refresh}
             />
@@ -92,8 +107,10 @@ export function DashboardView() {
             <Card>
               <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-zinc-200">Begin exposure session</p>
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Begin sunbathing session
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
                     {calc.noExposure
                       ? "Session unavailable until UV rises above 0."
                       : "Timestamp-locked timer • MED-based limits • mL hydration"}
@@ -102,17 +119,13 @@ export function DashboardView() {
                 {canStartSession ? (
                   <Link href="/session" onClick={startSession}>
                     <Button variant="gold" className="w-full sm:w-auto">
-                      <Play className="size-4" strokeWidth={1.75} />
+                      <Play className="size-4" strokeWidth={2} />
                       Start session
                     </Button>
                   </Link>
                 ) : (
                   <Button variant="secondary" disabled className="w-full sm:w-auto">
-                    {isOffline
-                      ? "Offline"
-                      : calc.noExposure
-                        ? "No UV"
-                        : "Awaiting weather"}
+                    {isOffline ? "Offline" : calc.noExposure ? "No UV" : "Loading…"}
                   </Button>
                 )}
               </CardContent>

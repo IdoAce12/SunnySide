@@ -1,6 +1,6 @@
 {
-  "theme_color": "#09090b",
-  "background_color": "#09090b",
+  "theme_color": "#FDFBF7",
+  "background_color": "#FDFBF7",
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
@@ -11,12 +11,20 @@
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

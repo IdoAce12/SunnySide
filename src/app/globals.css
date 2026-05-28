@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b; /* zinc-950 PWA */
-  --foreground: #fafafa;
-  --card: rgba(24, 24, 27, 0.55); /* zinc-900 */
-  --card-foreground: #fafafa;
-  --border: #27272a; /* zinc-800 */
-  --accent: #b45309; /* amber-700 gold */
-  --accent-foreground: #fafafa;
-  --marine: #64748b; /* steel */
-  --muted: rgba(39, 39, 42, 0.5);
-  --muted-foreground: #a1a1aa;
-  --ring: rgba(180, 83, 9, 0.35);
+  --background: #fdfbf7; /* sandy cream */
+  --foreground: #0f172a; /* slate-900 */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #ece6da; /* soft sand */
+  --accent: #f59e0b; /* warm sun gold (amber-500) */
+  --accent-foreground: #ffffff;
+  --ocean: #0ea5e9; /* sky-500 */
+  --muted: #f5f1e8;
+  --muted-foreground: #64748b; /* slate-500 */
+  --ring: rgba(245, 158, 11, 0.35);
 }
 
 @theme inline {
@@ -22,7 +22,7 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-marine: var(--marine);
+  --color-ocean: var(--ocean);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-ring: var(--ring);
@@ -31,7 +31,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -42,14 +42,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle depth — no cartoon gradients */
+/* Fresh summer ambience: ocean blue + sun gold tints over cream */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(180, 83, 9, 0.06), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(100, 116, 139, 0.04), transparent);
+  background: radial-gradient(ellipse 90% 55% at 50% -10%, rgba(224, 242, 254, 0.9), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(253, 224, 71, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(224, 242, 254, 0.5), transparent 60%);
   z-index: 0;
 }
 
@@ -61,7 +62,7 @@ body > * {
 @keyframes moon-pulse {
   0%,
   100% {
-    opacity: 0.55;
+    opacity: 0.6;
     transform: scale(1);
   }
   50% {

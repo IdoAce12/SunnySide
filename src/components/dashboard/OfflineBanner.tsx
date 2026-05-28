@@ -3,17 +3,25 @@
 import { WifiOff } from "lucide-react";
 import { cn } from "@/utils/cn";
 
-export function OfflineBanner({ className }: { className?: string }) {
+export function OfflineBanner({
+  locationName = "Tel Aviv",
+  className,
+}: {
+  locationName?: string;
+  className?: string;
+}) {
   return (
     <div
       role="status"
       className={cn(
-        "flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/90 px-4 py-2.5 text-sm text-zinc-400 backdrop-blur-sm",
+        "flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm",
         className,
       )}
     >
-      <WifiOff className="size-4 shrink-0 text-zinc-500" strokeWidth={1.75} />
-      <span>Offline Mode — Using cached Tel Aviv beach data</span>
+      <WifiOff className="size-4 shrink-0 text-slate-400" strokeWidth={2} />
+      <span>
+        Offline Mode — Using cached {locationName} beach data
+      </span>
     </div>
   );
 }
