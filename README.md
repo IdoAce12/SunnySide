@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SunnySide
 
-## Getting Started
+Premium sun exposure & hydration performance tracker.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router (TypeScript)
+- Tailwind CSS v4
+- Lucide React
+- Open-Meteo (forecast + marine APIs)
+- Supabase (optional session persistence)
+
+## Run
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Path | Role |
+|------|------|
+| `src/utils/sunCalc.ts` | MED-based exposure, SPF UVB transmission, mL hydration model |
+| `src/hooks/useElapsedTime.ts` | Wall-clock timer + `visibilitychange` resync |
+| `src/services/weatherApi.ts` | Open-Meteo client + typed responses |
+| `src/components/dashboard/PremiumMetrics.tsx` | Live environmental grid |
+| `src/components/session/ActiveTracker.tsx` | Active session with arc progress |
+| `src/components/analytics/PerformanceSummary.tsx` | SED & fluid balance reports |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Supabase (optional)
 
-## Learn More
+Copy `.env.local.example` → `.env.local` and create table:
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```sql
+create table if not exists public.sun_sessions (
+  id text primary key,
+  started_at timestamptz not null,
+  ended_at timestamptz not null,
+  duration_minutes int not null,
+  water_ml int not null,
+  skin_type int not null,
+  spf int not null,
+  uv_index_avg real not null,
+  sed_absorbed real,
+  weather_json jsonb not null
+);
+```
