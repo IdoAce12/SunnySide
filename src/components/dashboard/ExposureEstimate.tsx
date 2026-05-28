@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity } from "lucide-react";
+import { Activity, ShieldCheck } from "lucide-react";
 import type { SunCalcResult } from "@/utils/sunCalc";
 import { getSkinTypeShort, sunscreenLabel } from "@/utils/sunCalc";
 import type { FitzpatrickSkinType, SunscreenChoice } from "@/utils/sunCalc";
@@ -41,13 +41,21 @@ export function ExposureEstimate({
               : "border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50",
           )}
         >
-          <div
-            className={cn(
-              "text-[10px] font-semibold uppercase tracking-widest",
-              calc.noExposure ? "text-slate-400" : "text-amber-600",
-            )}
-          >
-            {calc.noExposure ? "Exposure status" : "Safe limit at current UV"}
+          <div className="flex items-center justify-between gap-2">
+            <div
+              className={cn(
+                "text-[10px] font-semibold uppercase tracking-widest",
+                calc.noExposure ? "text-slate-400" : "text-amber-600",
+              )}
+            >
+              {calc.noExposure ? "Exposure status" : "Safe limit at current UV"}
+            </div>
+            {!calc.noExposure && calc.capped ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-700">
+                <ShieldCheck className="size-2.5" strokeWidth={2.5} />
+                Max Safe Session Reached
+              </span>
+            ) : null}
           </div>
           <div className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
             {calc.noExposure ? (
@@ -61,8 +69,10 @@ export function ExposureEstimate({
           </div>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
             {calc.noExposure
-              ? "UV is zero, unavailable, or you are offline. Sunbathing is not possible."
-              : `Erythemally weighted irradiance ${(calc.uvIrradianceWPerM2 * 1000).toFixed(1)} mW/m² • Transmission ${(calc.spfTransmission * 100).toFixed(0)}%`}
+              ? "UV is zero or unavailable. Sunbathing is not possible right now."
+              : calc.capped
+                ? `Formula returned ${calc.rawExposureMinutes} min — truncated to a strict ${calc.hardCapMinutes} min cap for safety.`
+                : `Erythemally weighted irradiance ${(calc.uvIrradianceWPerM2 * 1000).toFixed(1)} mW/m² • Transmission ${(calc.spfTransmission * 100).toFixed(0)}%`}
           </p>
         </div>
       </CardContent>

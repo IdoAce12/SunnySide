@@ -1,8 +1,10 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Sun, Timer } from "lucide-react";
+import { ensureServiceWorker } from "@/utils/notifications";
 import { cn } from "@/utils/cn";
 
 const nav = [
@@ -13,6 +15,10 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  React.useEffect(() => {
+    void ensureServiceWorker();
+  }, []);
 
   return (
     <div className="flex min-h-full flex-col">

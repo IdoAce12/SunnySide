@@ -7,6 +7,11 @@
  * SPF transmission (UVB blocked): 15→93%, 30→97%, 50→98%.
  *
  * Guard: UV ≤ 0 or invalid → safeExposureMinutes = 0, noExposure = true.
+ *
+ * Real-world safety caps (override the formula, never exceeded):
+ *   UV ≥ 8 (extreme)        → 30 min
+ *   UV 4–7 (moderate/high)  → 60 min
+ *   absolute ceiling        → 90 min (any UV)
  */
 
 export type FitzpatrickSkinType = 1 | 2 | 3 | 4 | 5 | 6;
@@ -34,6 +39,17 @@ const SPF_TRANSMISSION: Record<SunscreenChoice, number> = {
 /** UV Index → erythemally weighted irradiance (W/m²). WHO conversion factor. */
 const UV_INDEX_TO_IRRADIANCE = 0.025;
 
+/** Absolute ceiling for any single session, regardless of UV or skin type. */
+export const ABSOLUTE_MAX_SESSION_MINUTES = 90;
+
+/** Strict human-safety cap (minutes) for a single session at a given UV Index. */
+export function exposureHardCapMinutes(uvIndex: number | null | undefined): number {
+  const uv = normalizeUvIndex(uvIndex);
+  if (uv >= 8) return 30; // extreme
+  if (uv >= 4) return 60; // moderate / high
+  return ABSOLUTE_MAX_SESSION_MINUTES; // low UV still capped at the ceiling
+}
+
 export interface SunCalcInputs {
   skinType: FitzpatrickSkinType;
   uvIndex: number | null | undefined;
@@ -44,8 +60,14 @@ export interface SunCalcResult {
   medJPerM2: number;
   uvIrradianceWPerM2: number;
   spfTransmission: number;
-  /** Minutes until MED at constant UV. 0 when noExposure. */
+  /** Minutes until MED at constant UV, after human-safety caps. 0 when noExposure. */
   safeExposureMinutes: number;
+  /** Uncapped formula result (minutes) — for transparency / debugging. */
+  rawExposureMinutes: number;
+  /** The strict cap applied for the current UV Index (minutes). */
+  hardCapMinutes: number;
+  /** True when the formula exceeded the cap and was truncated → show badge. */
+  capped: boolean;
   sedPerMinute: number;
   /** UV is zero or invalid — do not show inflated limits. */
   noExposure: boolean;
@@ -136,6 +158,9 @@ export function calculateSafeExposure({
       uvIrradianceWPerM2: 0,
       spfTransmission,
       safeExposureMinutes: 0,
+      rawExposureMinutes: 0,
+      hardCapMinutes: exposureHardCapMinutes(uv),
+      capped: false,
       sedPerMinute: 0,
       noExposure: true,
     };
@@ -144,7 +169,15 @@ export function calculateSafeExposure({
   const uvIrradianceWPerM2 = uv * UV_INDEX_TO_IRRADIANCE;
   const effectiveIrradiance = uvIrradianceWPerM2 * spfTransmission;
   const secondsToMed = medJPerM2 / effectiveIrradiance;
-  const safeExposureMinutes = clamp(secondsToMed / 60, 1, 24 * 60);
+  const rawExposureMinutes = Math.round(secondsToMed / 60);
+
+  const hardCapMinutes = exposureHardCapMinutes(uv);
+  const safeExposureMinutes = clamp(
+    Math.min(rawExposureMinutes, hardCapMinutes),
+    1,
+    ABSOLUTE_MAX_SESSION_MINUTES,
+  );
+  const capped = rawExposureMinutes > safeExposureMinutes;
 
   const sedPerMinute = (uvIrradianceWPerM2 * 60) / 100;
 
@@ -153,6 +186,9 @@ export function calculateSafeExposure({
     uvIrradianceWPerM2,
     spfTransmission,
     safeExposureMinutes,
+    rawExposureMinutes,
+    hardCapMinutes,
+    capped,
     sedPerMinute,
     noExposure: false,
   };

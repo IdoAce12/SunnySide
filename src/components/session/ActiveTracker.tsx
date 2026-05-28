@@ -4,9 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  BellRing,
   Droplets,
   FlipHorizontal2,
   Shield,
+  ShieldCheck,
   Square,
   Timer,
 } from "lucide-react";
@@ -15,6 +17,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { formatElapsed, useElapsedTime } from "@/hooks/useElapsedTime";
+import { useSessionNotifications } from "@/hooks/useSessionNotifications";
+import type { PermissionState } from "@/utils/notifications";
 import type { ActiveSessionState } from "@/utils/sessionTypes";
 import {
   calculateHydration,
@@ -84,6 +88,23 @@ export function ActiveTracker() {
       })
     : null;
 
+  // Reminder cadence derived from sweat rate: time to lose ~250 mL, clamped 15–45 min.
+  const lossRatePerHour = hydration?.fluidLossRateMlPerHour ?? 500;
+  const hydrationIntervalMinutes = Math.min(
+    45,
+    Math.max(15, Math.round(15000 / Math.max(1, lossRatePerHour))),
+  );
+
+  const { supported, permission, enableAlerts, clearSessionAlerts } =
+    useSessionNotifications({
+      startedAt: active?.startedAt ?? null,
+      enabled: !!active && !noExposure,
+      safeLimitMinutes: exposure?.safeExposureMinutes ?? 0,
+      remainingMinutes: safeLeft,
+      flipIntervalMinutes: flipInterval,
+      hydrationIntervalMinutes,
+    });
+
   const logWater = (ml: number) => {
     if (!active) return;
     const next = { ...active, waterMlLogged: active.waterMlLogged + ml };
@@ -93,6 +114,7 @@ export function ActiveTracker() {
 
   const handleFinishSession = () => {
     if (!active || !exposure || !hydration) return;
+    clearSessionAlerts();
     void finalizeSession({ active, exposure, hydration, uvIndex }).then(() => {
       setActive(null);
       router.push("/analytics");
@@ -157,14 +179,25 @@ export function ActiveTracker() {
           </div>
         ) : null}
 
+        <AlertsCard
+          supported={supported}
+          permission={permission}
+          onEnable={enableAlerts}
+          flipIntervalMinutes={flipInterval}
+          hydrationIntervalMinutes={hydrationIntervalMinutes}
+        />
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="size-4 text-amber-500" strokeWidth={2} />
-                Exposure budget
-              </CardTitle>
-              <CardDescription>MED-based safe limit remaining</CardDescription>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="size-4 text-amber-500" strokeWidth={2} />
+                  Exposure budget
+                </CardTitle>
+                {exposure?.capped ? <MaxSessionBadge /> : null}
+              </div>
+              <CardDescription>MED-based safe limit · strict safety cap</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <ProgressRing
@@ -183,6 +216,12 @@ export function ActiveTracker() {
                     noExposure ? "No exposure" : `${Math.round(exposure!.safeExposureMinutes)} min`
                   }
                 />
+                {exposure?.capped ? (
+                  <Row
+                    label="Uncapped formula"
+                    value={`${exposure.rawExposureMinutes} min`}
+                  />
+                ) : null}
                 <Row label="SED rate" value={`${exposure!.sedPerMinute.toFixed(3)} /min`} />
                 <Row
                   label="Absorbed (est.)"
@@ -292,5 +331,65 @@ function FluidStat({
         <span className="ml-1 text-xs font-normal text-slate-400">{unit}</span>
       </div>
     </div>
+  );
+}
+
+function MaxSessionBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+      <ShieldCheck className="size-3" strokeWidth={2.5} />
+      Max Safe Session Reached
+    </span>
+  );
+}
+
+function AlertsCard({
+  supported,
+  permission,
+  onEnable,
+  flipIntervalMinutes,
+  hydrationIntervalMinutes,
+}: {
+  supported: boolean;
+  permission: PermissionState;
+  onEnable: () => void;
+  flipIntervalMinutes: number;
+  hydrationIntervalMinutes: number;
+}) {
+  const granted = permission === "granted";
+  const denied = permission === "denied";
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              "grid size-9 shrink-0 place-items-center rounded-xl",
+              granted ? "bg-amber-50 text-amber-500" : "bg-stone-100 text-slate-400",
+            )}
+          >
+            <BellRing className="size-4" strokeWidth={2} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Lock-screen alerts</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+              {!supported
+                ? "This device does not support web notifications."
+                : granted
+                  ? `On — flip every ${flipIntervalMinutes} min · hydrate every ${hydrationIntervalMinutes} min · finish alert at your safe limit.`
+                  : denied
+                    ? "Blocked. Enable notifications for SunnySide in your browser settings."
+                    : "Get flip, hydration, and finish alerts even when your phone is locked."}
+            </p>
+          </div>
+        </div>
+        {supported && !granted && !denied ? (
+          <Button variant="gold" size="sm" onClick={onEnable} className="w-full sm:w-auto">
+            Enable alerts
+          </Button>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
