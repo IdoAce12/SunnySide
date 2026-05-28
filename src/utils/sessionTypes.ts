@@ -10,7 +10,11 @@ export interface WeatherMarineSnapshot {
   windSpeedKph: number;
   jellyfishAlert: "none" | "possible" | "high";
   fetchedAt: number;
-  source: "open-meteo" | "fallback";
+  source: "open-meteo";
+  /** IANA timezone of the selected location (e.g. "America/New_York"). */
+  timezone?: string;
+  /** Wall-clock time at the location when the reading was taken (ISO, no zone). */
+  localTime?: string;
 }
 
 export interface SetupSelections {

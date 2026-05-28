@@ -6,7 +6,7 @@
  *
  * SPF transmission (UVB blocked): 15→93%, 30→97%, 50→98%.
  *
- * Guard: UV ≤ 0, invalid, or offline → safeExposureMinutes = 0, noExposure = true.
+ * Guard: UV ≤ 0 or invalid → safeExposureMinutes = 0, noExposure = true.
  */
 
 export type FitzpatrickSkinType = 1 | 2 | 3 | 4 | 5 | 6;
@@ -38,8 +38,6 @@ export interface SunCalcInputs {
   skinType: FitzpatrickSkinType;
   uvIndex: number | null | undefined;
   spf: SunscreenChoice;
-  /** When true, exposure budget is zero regardless of UV reading. */
-  isOffline?: boolean;
 }
 
 export interface SunCalcResult {
@@ -49,7 +47,7 @@ export interface SunCalcResult {
   /** Minutes until MED at constant UV. 0 when noExposure. */
   safeExposureMinutes: number;
   sedPerMinute: number;
-  /** UV is zero/invalid or device is offline — do not show inflated limits. */
+  /** UV is zero or invalid — do not show inflated limits. */
   noExposure: boolean;
 }
 
@@ -115,27 +113,24 @@ export function normalizeUvIndex(uvIndex: number | null | undefined): number {
 /** True when exposure calculations must return zero budget. */
 export function shouldBlockExposure(
   uvIndex: number | null | undefined,
-  isOffline = false,
 ): boolean {
-  if (isOffline) return true;
   return normalizeUvIndex(uvIndex) <= 0;
 }
 
 /**
  * Safe exposure limit from MED and current UV Index.
- * Never divides by zero; returns 0 minutes when UV ≤ 0 or offline.
+ * Never divides by zero; returns 0 minutes when UV ≤ 0.
  */
 export function calculateSafeExposure({
   skinType,
   uvIndex,
   spf,
-  isOffline = false,
 }: SunCalcInputs): SunCalcResult {
   const medJPerM2 = getMedForSkinType(skinType);
   const spfTransmission = SPF_TRANSMISSION[spf];
   const uv = normalizeUvIndex(uvIndex);
 
-  if (shouldBlockExposure(uv, isOffline)) {
+  if (shouldBlockExposure(uv)) {
     return {
       medJPerM2,
       uvIrradianceWPerM2: 0,

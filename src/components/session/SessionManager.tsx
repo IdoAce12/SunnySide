@@ -5,7 +5,6 @@ import { WaitState } from "@/components/session/WaitState";
 import { MetricsGridSkeleton } from "@/components/ui/Skeleton";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { useWeather } from "@/hooks/useWeather";
-import { useOnline } from "@/hooks/useOnline";
 import { weatherDataFromSnapshot, type WeatherData } from "@/types/weather";
 import { loadActiveSession } from "@/utils/storage";
 import { isZeroUvIndex } from "@/utils/uv";
@@ -22,11 +21,12 @@ function initialSessionCoords():
 }
 
 /**
- * Routes between live tracking and zero-UV wait state.
- * Uses live Open-Meteo readings when available; falls back to session snapshot.
+ * Routes between live tracking and the zero-UV wait state.
+ * Uses live Open-Meteo readings for the session coordinates when available, and
+ * falls back to the snapshot captured at session start (not an offline cache —
+ * just this session's own recorded conditions).
  */
 export function SessionManager() {
-  const isOffline = useOnline();
   const sessionCoords = initialSessionCoords();
   const { status, weather } = useWeather(sessionCoords);
 
@@ -39,8 +39,7 @@ export function SessionManager() {
   }
 
   const currentUv = weatherData?.uv_index ?? null;
-  const showWaitState =
-    isOffline || (currentUv !== null && isZeroUvIndex(currentUv));
+  const showWaitState = currentUv !== null && isZeroUvIndex(currentUv);
 
   if (status === "loading" && weatherData === null) {
     return (

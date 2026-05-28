@@ -19,10 +19,6 @@ export function requestGeolocation(timeoutMs = 8000): Promise<GeolocationOutcome
       resolve({ ok: false, coords: null, reason: "unsupported" });
       return;
     }
-    if (!navigator.onLine) {
-      resolve({ ok: false, coords: null, reason: "offline" });
-      return;
-    }
 
     let settled = false;
     const finish = (outcome: GeolocationOutcome) => {

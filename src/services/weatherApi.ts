@@ -1,18 +1,23 @@
 import type { WeatherMarineSnapshot } from "@/utils/sessionTypes";
 
-/** Open-Meteo Forecast API response (subset). */
+/**
+ * Open-Meteo Forecast API response (subset).
+ *
+ * We request the `current` block with `timezone=auto`, so every reading is
+ * evaluated against the SELECTED location's active timezone — not the device
+ * clock. If it is 14:24 in Miami, `current.uv_index` reflects Miami's live sun.
+ */
 export interface OpenMeteoForecastResponse {
   latitude: number;
   longitude: number;
-  hourly: {
-    time: string[];
-    uv_index: number[];
-    temperature_2m: number[];
-    wind_speed_10m: number[];
-  };
-  daily?: {
-    time: string[];
-    wave_height_max?: number[];
+  timezone: string;
+  timezone_abbreviation?: string;
+  utc_offset_seconds: number;
+  current?: {
+    time: string;
+    uv_index?: number;
+    temperature_2m?: number;
+    wind_speed_10m?: number;
   };
 }
 
@@ -20,23 +25,23 @@ export interface OpenMeteoForecastResponse {
 export interface OpenMeteoMarineResponse {
   latitude: number;
   longitude: number;
-  hourly: {
-    time: string[];
-    sea_surface_temperature: number[];
-    wave_height: number[];
+  current?: {
+    time: string;
+    sea_surface_temperature?: number;
+    wave_height?: number;
   };
 }
 
 export interface WeatherApiError {
-  code: "NETWORK" | "PARSE" | "EMPTY" | "OFFLINE" | "UNKNOWN";
+  code: "NETWORK" | "PARSE" | "EMPTY" | "UNKNOWN";
   message: string;
 }
 
 export type WeatherFetchResult =
-  | { ok: true; data: WeatherMarineSnapshot; fromCache: boolean }
-  | { ok: false; error: WeatherApiError; data: WeatherMarineSnapshot; fromCache: boolean };
+  | { ok: true; data: WeatherMarineSnapshot }
+  | { ok: false; error: WeatherApiError };
 
-/** Tel Aviv beach — strict default & offline fallback. */
+/** Tel Aviv beach — the default *coordinate* (no offline data, just a start point). */
 export const TEL_AVIV_COORDS = {
   latitude: 32.0853,
   longitude: 34.7818,
@@ -46,23 +51,6 @@ export const DEFAULT_COORDS = TEL_AVIV_COORDS;
 
 const FORECAST_BASE = "https://api.open-meteo.com/v1/forecast";
 const MARINE_BASE = "https://marine-api.open-meteo.com/v1/marine";
-const CACHE_PREFIX = "sunnyside:weather:v2:";
-const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-function cacheKey(latitude: number, longitude: number): string {
-  return `${CACHE_PREFIX}${latitude.toFixed(2)},${longitude.toFixed(2)}`;
-}
-
-function currentHourIndex(times: string[]): number {
-  const now = new Date();
-  const hourKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}T${String(now.getUTCHours()).padStart(2, "0")}:00`;
-
-  let idx = times.findIndex((t) => t.startsWith(hourKey.slice(0, 13)));
-  if (idx < 0) {
-    idx = Math.min(now.getHours(), times.length - 1);
-  }
-  return Math.max(0, idx);
-}
 
 function jellyfishRisk(
   waveM: number | null,
@@ -79,165 +67,95 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function loadCachedWeather(
-  latitude: number,
-  longitude: number,
-): WeatherMarineSnapshot | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(cacheKey(latitude, longitude));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { savedAt: number; data: WeatherMarineSnapshot };
-    return parsed.data; // stale data still useful when offline
-  } catch {
-    return null;
-  }
-}
-
-export function saveCachedWeather(data: WeatherMarineSnapshot): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    cacheKey(data.latitude, data.longitude),
-    JSON.stringify({ savedAt: Date.now(), data }),
-  );
-}
-
-function isCacheFresh(data: WeatherMarineSnapshot): boolean {
-  return Date.now() - data.fetchedAt < CACHE_MAX_AGE_MS;
-}
-
-/** Day/night-aware static fallback for any location. */
-export function createFallbackWeather(
-  latitude: number = TEL_AVIV_COORDS.latitude,
-  longitude: number = TEL_AVIV_COORDS.longitude,
-): WeatherMarineSnapshot {
-  const hour = new Date().getHours();
-  const isDaytime = hour >= 6 && hour < 19;
-  return {
-    latitude,
-    longitude,
-    uvIndex: isDaytime ? 6.5 : 0,
-    airTempC: 27,
-    waterTempC: 24,
-    waveHeightM: 0.45,
-    windSpeedKph: 14,
-    jellyfishAlert: "none",
-    fetchedAt: Date.now(),
-    source: "fallback",
-  };
-}
-
-/** Backward-compatible Tel Aviv helpers. */
-export function loadCachedTelAvivWeather(): WeatherMarineSnapshot | null {
-  return loadCachedWeather(TEL_AVIV_COORDS.latitude, TEL_AVIV_COORDS.longitude);
-}
-
-export function createTelAvivFallbackWeather(): WeatherMarineSnapshot {
-  return createFallbackWeather(TEL_AVIV_COORDS.latitude, TEL_AVIV_COORDS.longitude);
-}
-
-function resolveOfflineWeather(
-  latitude: number,
-  longitude: number,
-): WeatherMarineSnapshot {
-  const cached = loadCachedWeather(latitude, longitude);
-  if (cached) {
-    return { ...cached, source: "fallback" as const, fetchedAt: Date.now() };
-  }
-  return createFallbackWeather(latitude, longitude);
-}
-
+/**
+ * Fetch live forecast + marine conditions for exact coordinates.
+ *
+ * Always hits the network. There is no offline cache, no hardcoded fallback,
+ * and no `navigator.onLine` interception — on failure the caller renders a
+ * clean "network required" state.
+ */
 export async function fetchWeatherMarine(
   latitude: number = TEL_AVIV_COORDS.latitude,
   longitude: number = TEL_AVIV_COORDS.longitude,
-  options?: { forceOffline?: boolean },
 ): Promise<WeatherFetchResult> {
-  if (options?.forceOffline || (typeof navigator !== "undefined" && !navigator.onLine)) {
-    return {
-      ok: false,
-      error: {
-        code: "OFFLINE",
-        message: "Device is offline. Showing cached coastal data.",
-      },
-      data: resolveOfflineWeather(latitude, longitude),
-      fromCache: true,
-    };
-  }
+  const forecastParams = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    current: "uv_index,temperature_2m,wind_speed_10m",
+    timezone: "auto",
+    forecast_days: "1",
+  });
+
+  const marineParams = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    current: "sea_surface_temperature,wave_height",
+    timezone: "auto",
+    forecast_days: "1",
+  });
+
+  let forecast: OpenMeteoForecastResponse;
+  let marine: PromiseSettledResult<OpenMeteoMarineResponse>;
 
   try {
-    const forecastParams = new URLSearchParams({
-      latitude: String(latitude),
-      longitude: String(longitude),
-      hourly: "uv_index,temperature_2m,wind_speed_10m",
-      daily: "wave_height_max",
-      timezone: "auto",
-      forecast_days: "1",
-    });
-
-    const marineParams = new URLSearchParams({
-      latitude: String(latitude),
-      longitude: String(longitude),
-      hourly: "sea_surface_temperature,wave_height",
-      timezone: "auto",
-      forecast_days: "1",
-    });
-
-    const [forecast, marine] = await Promise.allSettled([
+    const [forecastResult, marineResult] = await Promise.allSettled([
       fetchJson<OpenMeteoForecastResponse>(`${FORECAST_BASE}?${forecastParams}`),
       fetchJson<OpenMeteoMarineResponse>(`${MARINE_BASE}?${marineParams}`),
     ]);
 
-    if (forecast.status !== "fulfilled") {
+    if (forecastResult.status !== "fulfilled") {
       return {
         ok: false,
-        error: { code: "NETWORK", message: "Unable to reach weather services." },
-        data: resolveOfflineWeather(latitude, longitude),
-        fromCache: true,
+        error: {
+          code: "NETWORK",
+          message: "Unable to reach the weather service.",
+        },
       };
     }
 
-    const f = forecast.value;
-    const idx = currentHourIndex(f.hourly.time);
-
-    const uvIndex = f.hourly.uv_index[idx] ?? 0;
-    const airTempC = f.hourly.temperature_2m[idx] ?? 25;
-    const windSpeedKph = Math.round(f.hourly.wind_speed_10m[idx] ?? 0);
-
-    let waterTempC: number | null = null;
-    let waveHeightM: number | null = f.daily?.wave_height_max?.[0] ?? null;
-
-    if (marine.status === "fulfilled") {
-      const mIdx = currentHourIndex(marine.value.hourly.time);
-      waterTempC = marine.value.hourly.sea_surface_temperature[mIdx] ?? null;
-      const liveWave = marine.value.hourly.wave_height[mIdx];
-      if (liveWave != null) waveHeightM = liveWave;
-    }
-
-    const snapshot: WeatherMarineSnapshot = {
-      latitude: f.latitude,
-      longitude: f.longitude,
-      uvIndex: Number(uvIndex.toFixed(1)),
-      airTempC: Number(airTempC.toFixed(1)),
-      waterTempC: waterTempC != null ? Number(waterTempC.toFixed(1)) : null,
-      waveHeightM: waveHeightM != null ? Number(waveHeightM.toFixed(2)) : null,
-      windSpeedKph,
-      jellyfishAlert: jellyfishRisk(waveHeightM, windSpeedKph),
-      fetchedAt: Date.now(),
-      source: "open-meteo",
-    };
-
-    saveCachedWeather(snapshot);
-
-    return { ok: true, data: snapshot, fromCache: false };
+    forecast = forecastResult.value;
+    marine = marineResult;
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
+    const message = e instanceof Error ? e.message : "Unknown network error";
+    return { ok: false, error: { code: "NETWORK", message } };
+  }
+
+  const current = forecast.current;
+  if (!current) {
     return {
       ok: false,
-      error: { code: "UNKNOWN", message },
-      data: resolveOfflineWeather(latitude, longitude),
-      fromCache: true,
+      error: {
+        code: "EMPTY",
+        message: "Weather service returned no current readings for this location.",
+      },
     };
   }
-}
 
-export { isCacheFresh };
+  const uvIndex = current.uv_index ?? 0;
+  const airTempC = current.temperature_2m ?? 0;
+  const windSpeedKph = Math.round(current.wind_speed_10m ?? 0);
+
+  let waterTempC: number | null = null;
+  let waveHeightM: number | null = null;
+  if (marine.status === "fulfilled" && marine.value.current) {
+    waterTempC = marine.value.current.sea_surface_temperature ?? null;
+    waveHeightM = marine.value.current.wave_height ?? null;
+  }
+
+  const snapshot: WeatherMarineSnapshot = {
+    latitude: forecast.latitude,
+    longitude: forecast.longitude,
+    uvIndex: Number(uvIndex.toFixed(1)),
+    airTempC: Number(airTempC.toFixed(1)),
+    waterTempC: waterTempC != null ? Number(waterTempC.toFixed(1)) : null,
+    waveHeightM: waveHeightM != null ? Number(waveHeightM.toFixed(2)) : null,
+    windSpeedKph,
+    jellyfishAlert: jellyfishRisk(waveHeightM, windSpeedKph),
+    fetchedAt: Date.now(),
+    source: "open-meteo",
+    timezone: forecast.timezone,
+    localTime: current.time,
+  };
+
+  return { ok: true, data: snapshot };
+}

@@ -7,9 +7,9 @@ import { LocationPicker } from "@/components/dashboard/LocationPicker";
 import { PremiumMetrics } from "@/components/dashboard/PremiumMetrics";
 import { ProfileSetup } from "@/components/dashboard/ProfileSetup";
 import { ExposureEstimate } from "@/components/dashboard/ExposureEstimate";
-import { OfflineBanner } from "@/components/dashboard/OfflineBanner";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import { NetworkErrorCard } from "@/components/ui/NetworkErrorCard";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { useWeather } from "@/hooks/useWeather";
 import { DEFAULT_LOCATION, type CoastalLocation } from "@/services/locations";
@@ -24,7 +24,7 @@ const DEFAULT_SPF: SunscreenChoice = 30;
 
 export function DashboardView() {
   const [location, setLocation] = React.useState<CoastalLocation>(DEFAULT_LOCATION);
-  const { status, weather, error, isOffline, refresh } = useWeather({
+  const { status, weather, refresh } = useWeather({
     latitude: location.latitude,
     longitude: location.longitude,
   });
@@ -43,11 +43,11 @@ export function DashboardView() {
     skinType: setup.skinType,
     spf: setup.spf,
     uvIndex,
-    isOffline,
   });
 
+  const hasError = status === "error";
   const canStartSession =
-    !!weather && !calc.noExposure && !isZeroUvIndex(uvIndex) && !isOffline;
+    !!weather && !hasError && !calc.noExposure && !isZeroUvIndex(uvIndex);
 
   const startSession = () => {
     if (!weather || !canStartSession) return;
@@ -63,8 +63,6 @@ export function DashboardView() {
 
   return (
     <div className="space-y-6">
-      {isOffline ? <OfflineBanner locationName={location.name} /> : null}
-
       <header className="space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
           Luxury beach resort tracker
@@ -96,13 +94,15 @@ export function DashboardView() {
           </div>
 
           <div className="space-y-6 lg:col-span-7">
-            <PremiumMetrics
-              status={status}
-              weather={weather}
-              locationName={`${location.name}, ${location.country}`}
-              errorMessage={error?.message}
-              onRetry={refresh}
-            />
+            {hasError ? (
+              <NetworkErrorCard onRetry={refresh} />
+            ) : (
+              <PremiumMetrics
+                status={status}
+                weather={weather}
+                locationName={`${location.name}, ${location.country}`}
+              />
+            )}
 
             <Card>
               <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -111,9 +111,11 @@ export function DashboardView() {
                     Begin sunbathing session
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {calc.noExposure
-                      ? "Session unavailable until UV rises above 0."
-                      : "Timestamp-locked timer • MED-based limits • mL hydration"}
+                    {hasError
+                      ? "Reconnect to the internet to start tracking."
+                      : calc.noExposure
+                        ? "Session unavailable until UV rises above 0."
+                        : "Timestamp-locked timer • MED-based limits • mL hydration"}
                   </p>
                 </div>
                 {canStartSession ? (
@@ -125,7 +127,7 @@ export function DashboardView() {
                   </Link>
                 ) : (
                   <Button variant="secondary" disabled className="w-full sm:w-auto">
-                    {isOffline ? "Offline" : calc.noExposure ? "No UV" : "Loading…"}
+                    {hasError ? "Network error" : calc.noExposure ? "No UV" : "Loading…"}
                   </Button>
                 )}
               </CardContent>

@@ -15,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { formatElapsed, useElapsedTime } from "@/hooks/useElapsedTime";
-import { useOnline } from "@/hooks/useOnline";
 import type { ActiveSessionState } from "@/utils/sessionTypes";
 import {
   calculateHydration,
@@ -31,7 +30,6 @@ import { cn } from "@/utils/cn";
 
 export function ActiveTracker() {
   const router = useRouter();
-  const isOffline = useOnline();
   const [active, setActive] = React.useState<ActiveSessionState | null>(() =>
     loadActiveSession(),
   );
@@ -49,7 +47,6 @@ export function ActiveTracker() {
         skinType: active.setup.skinType,
         spf: active.setup.spf,
         uvIndex,
-        isOffline,
       })
     : null;
 
