@@ -16,18 +16,35 @@ import { dirname, join } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
 
-const CREAM = "#FDFBF7";
-const GOLD = "#F59E0B";
-const SUN = "#FDE047";
-const OCEAN = "#0EA5E9";
+const GOLD_FROM = "#FBBF24"; // amber-400
+const GOLD_TO = "#F59E0B"; // amber-500
+const WHITE = "#FFFFFF";
 
+/** White sun (disc + 8 rays) on a gold gradient — matches the in-app logo. */
 function svg(size) {
   const c = size / 2;
+  const disc = size * 0.17;
+  const r1 = size * 0.28;
+  const r2 = size * 0.38;
+  const rays = Array.from({ length: 8 }, (_, i) => {
+    const a = (Math.PI / 4) * i;
+    const x1 = (c + Math.cos(a) * r1).toFixed(2);
+    const y1 = (c + Math.sin(a) * r1).toFixed(2);
+    const x2 = (c + Math.cos(a) * r2).toFixed(2);
+    const y2 = (c + Math.sin(a) * r2).toFixed(2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${WHITE}" stroke-width="${size * 0.055}" stroke-linecap="round"/>`;
+  }).join("\n  ");
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${size * 0.22}" fill="${CREAM}"/>
-  <circle cx="${c}" cy="${size * 0.42}" r="${size * 0.18}" fill="${SUN}" stroke="${GOLD}" stroke-width="${size * 0.02}"/>
-  <path d="M ${size * 0.12} ${size * 0.72} Q ${c} ${size * 0.6} ${size * 0.88} ${size * 0.72}" fill="none" stroke="${OCEAN}" stroke-width="${size * 0.035}" stroke-linecap="round"/>
-  <path d="M ${size * 0.12} ${size * 0.82} Q ${c} ${size * 0.7} ${size * 0.88} ${size * 0.82}" fill="none" stroke="${OCEAN}" stroke-width="${size * 0.03}" stroke-linecap="round" opacity="0.6"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${GOLD_FROM}"/>
+      <stop offset="1" stop-color="${GOLD_TO}"/>
+    </linearGradient>
+  </defs>
+  <rect width="${size}" height="${size}" fill="url(#g)"/>
+  <circle cx="${c}" cy="${c}" r="${disc}" fill="${WHITE}"/>
+  ${rays}
 </svg>`;
 }
 
