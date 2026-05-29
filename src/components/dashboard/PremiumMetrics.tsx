@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Droplets,
-  Thermometer,
-  Umbrella,
-  Waves,
-  Wind,
-} from "lucide-react";
+import { Clock, Sun, Thermometer, Waves } from "lucide-react";
 import type { WeatherMarineSnapshot } from "@/utils/sessionTypes";
+import { swellLevelWord, uvLevelWord } from "@/utils/sunCalc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { MetricsGridSkeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/utils/cn";
@@ -37,13 +31,8 @@ export function PremiumMetrics({ status, weather, locationName }: PremiumMetrics
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle>Live conditions</CardTitle>
-            <CardDescription>
-              {locationName ? `${locationName} • ` : ""}Open-Meteo
-              {weather
-                ? ` · ${weather.latitude.toFixed(2)}°, ${weather.longitude.toFixed(2)}°`
-                : ""}
-            </CardDescription>
+            <CardTitle>At the beach</CardTitle>
+            <CardDescription>{locationName ?? "Live conditions"}</CardDescription>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
             <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -55,93 +44,77 @@ export function PremiumMetrics({ status, weather, locationName }: PremiumMetrics
         {status === "loading" || !weather ? (
           <MetricsGridSkeleton />
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <MetricCell
-                icon={Umbrella}
-                label="UV Index"
-                value={weather.uvIndex.toFixed(1)}
-                accent="gold"
-                highlight={weather.uvIndex >= 8}
-              />
-              <MetricCell icon={Thermometer} label="Air" value={`${weather.airTempC}°C`} accent="gold" />
-              <MetricCell
-                icon={Droplets}
-                label="Sea surface"
-                value={weather.waterTempC != null ? `${weather.waterTempC}°C` : "—"}
-                accent="ocean"
-              />
-              <MetricCell
-                icon={Waves}
-                label="Swell"
-                value={weather.waveHeightM != null ? `${weather.waveHeightM} m` : "—"}
-                accent="ocean"
-              />
-              <MetricCell icon={Wind} label="Wind" value={`${weather.windSpeedKph} km/h`} accent="ocean" />
-              <MetricCell
-                icon={AlertTriangle}
-                label="Marine hazard"
-                value={
-                  weather.jellyfishAlert === "none"
-                    ? "Clear"
-                    : weather.jellyfishAlert === "possible"
-                      ? "Monitor"
-                      : "Elevated"
-                }
-                accent={weather.jellyfishAlert === "high" ? "warn" : "ocean"}
-              />
-            </div>
-
-            <p className="mt-4 text-[11px] tabular-nums text-slate-400">
-              {localTime ? `Local time ${localTime}` : "Live"}
-              {weather.timezone ? ` · ${weather.timezone}` : ""} • updated{" "}
-              {new Date(weather.fetchedAt).toLocaleTimeString()}
-            </p>
-          </>
+          <div className="grid grid-cols-2 gap-3">
+            <MetricCard
+              icon={Clock}
+              accent="ocean"
+              label="Local Time"
+              value={localTime ?? "—"}
+              sub={weather.timezone ?? "Destination time"}
+            />
+            <MetricCard
+              icon={Sun}
+              accent="gold"
+              label="UV Power"
+              value={`${weather.uvIndex.toFixed(0)}`}
+              sub={uvLevelWord(weather.uvIndex)}
+              highlight={weather.uvIndex >= 8}
+            />
+            <MetricCard
+              icon={Thermometer}
+              accent="gold"
+              label="Temperature"
+              value={`${Math.round(weather.airTempC)}°`}
+              sub={
+                weather.waterTempC != null
+                  ? `Air · ${Math.round(weather.waterTempC)}° Sea`
+                  : "Air temperature"
+              }
+            />
+            <MetricCard
+              icon={Waves}
+              accent="ocean"
+              label="Sea Swell"
+              value={weather.waveHeightM != null ? `${weather.waveHeightM.toFixed(1)}m` : "—"}
+              sub={swellLevelWord(weather.waveHeightM)}
+            />
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
 
-function MetricCell({
+function MetricCard({
   icon: Icon,
   label,
   value,
-  accent = "ocean",
+  sub,
+  accent,
   highlight = false,
 }: {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
   value: string;
-  accent?: "ocean" | "gold" | "warn";
+  sub: string;
+  accent: "ocean" | "gold";
   highlight?: boolean;
 }) {
-  const tile =
-    accent === "gold"
-      ? "border-amber-100 bg-amber-50/50"
-      : accent === "warn"
-        ? "border-rose-100 bg-rose-50/50"
-        : "border-sky-100 bg-sky-50/40";
-
-  const iconColor =
-    accent === "gold"
-      ? "text-amber-500"
-      : accent === "warn"
-        ? "text-rose-500"
-        : "text-sky-500";
+  const tile = accent === "gold" ? "border-amber-100 bg-amber-50/50" : "border-sky-100 bg-sky-50/40";
+  const iconColor = accent === "gold" ? "text-amber-500" : "text-sky-500";
 
   return (
-    <div className={cn("rounded-2xl border p-4", tile, highlight && "ring-2 ring-amber-200")}>
-      <div className="mb-3 flex items-center gap-2">
+    <div className={cn("rounded-2xl border p-4 sm:p-5", tile, highlight && "ring-2 ring-amber-200")}>
+      <div className="mb-2 flex items-center gap-2">
         <Icon className={cn("size-4", iconColor)} strokeWidth={2} />
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
           {label}
         </span>
       </div>
-      <div className="text-xl font-semibold tabular-nums tracking-tight text-slate-900">
+      <div className="text-3xl font-semibold tabular-nums tracking-tight text-slate-900 sm:text-4xl">
         {value}
       </div>
+      <div className="mt-1 text-xs font-medium text-slate-500">{sub}</div>
     </div>
   );
 }

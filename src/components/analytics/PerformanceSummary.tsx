@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import type { CompletedSessionRecord } from "@/utils/sessionTypes";
 import { loadHistory } from "@/utils/storage";
-import { getSkinTypeShort, sunscreenLabel } from "@/utils/sunCalc";
+import { sunscreenLabel, uvLevelWord } from "@/utils/sunCalc";
 
 export function PerformanceSummary() {
   const [history] = React.useState<CompletedSessionRecord[]>(() => loadHistory());
@@ -45,10 +45,10 @@ export function PerformanceSummary() {
     <div className="space-y-8">
       <header className="space-y-1">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
-          Post-session intelligence
+          Your beach history
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-          Performance summary
+          Time in the sun
         </h1>
       </header>
 
@@ -56,32 +56,32 @@ export function PerformanceSummary() {
         <Kpi
           icon={Timer}
           accent="gold"
-          label="Exposure time"
+          label="Time in sun"
           value={`${totals.totalHours.toFixed(1)}h`}
           detail={`${totals.totalMinutes} min total`}
         />
         <Kpi
-          icon={Sun}
-          accent="gold"
-          label="Mean UV index"
-          value={totals.sessionCount ? totals.avgUv.toFixed(1) : "—"}
-          detail={`${totals.sessionCount} sessions`}
-        />
-        <Kpi
           icon={Activity}
           accent="ocean"
-          label="Cumulative SED"
-          value={totals.totalSed.toFixed(2)}
-          detail="Standard erythemal dose"
+          label="Beach days"
+          value={`${totals.sessionCount}`}
+          detail={totals.sessionCount === 1 ? "session logged" : "sessions logged"}
+        />
+        <Kpi
+          icon={Sun}
+          accent="gold"
+          label="Average sun"
+          value={totals.sessionCount ? uvLevelWord(totals.avgUv) : "—"}
+          detail={totals.sessionCount ? `UV ${totals.avgUv.toFixed(0)} on average` : "No data yet"}
         />
         <Kpi
           icon={Droplets}
           accent="ocean"
-          label="Fluid balance"
+          label="Water"
           value={`${totals.totalMl} mL`}
           detail={
             totals.recommendedMl > 0
-              ? `${totals.fluidBalancePct}% of ${totals.recommendedMl} mL target`
+              ? `${totals.fluidBalancePct}% of your goal`
               : "No hydration data"
           }
         />
@@ -91,9 +91,9 @@ export function PerformanceSummary() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="size-4 text-sky-500" strokeWidth={2} />
-            Session log
+            Past sessions
           </CardTitle>
-          <CardDescription>Structural UV dose &amp; fluid records</CardDescription>
+          <CardDescription>A simple log of your days at the beach</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {history.length === 0 ? (
@@ -154,21 +154,17 @@ function SessionRow({ session: s }: { session: CompletedSessionRecord }) {
           })}
         </span>
         <span className="text-xs text-slate-400">
-          {getSkinTypeShort(s.setup.skinType)} • {sunscreenLabel(s.setup.spf)}
+          Type {s.setup.skinType} • {sunscreenLabel(s.setup.spf)}
         </span>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Cell label="Duration" value={`${s.durationMinutes} min`} />
-        <Cell label="UV index" value={s.uvIndexAvg.toFixed(1)} />
-        <Cell label="SED absorbed" value={(s.sedAbsorbed ?? 0).toFixed(2)} />
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        <Cell label="Time in sun" value={`${s.durationMinutes} min`} />
+        <Cell label="Sun power" value={uvLevelWord(s.uvIndexAvg)} />
         <Cell
-          label="Hydration"
+          label="Water"
           value={`${s.waterMlLogged} mL`}
-          sub={balance != null ? `${balance}% of target` : undefined}
+          sub={balance != null ? `${balance}% of goal` : undefined}
         />
-      </div>
-      <div className="mt-2 text-[11px] text-slate-400">
-        MED {s.medJPerM2 ?? "—"} J/m² • Limit {Math.round(s.safeExposureMinutes ?? 0)} min
       </div>
     </div>
   );

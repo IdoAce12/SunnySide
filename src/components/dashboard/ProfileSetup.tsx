@@ -27,7 +27,7 @@ export function ProfileSetup({
       <CardHeader>
         <CardTitle>Your skin profile</CardTitle>
         <CardDescription>
-          Fitzpatrick classification &amp; UVB attenuation via sunscreen.
+          Tell us your skin tone and sunscreen for a personalized plan.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

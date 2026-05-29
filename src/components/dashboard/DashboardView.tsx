@@ -114,8 +114,8 @@ export function DashboardView() {
                     {hasError
                       ? "Reconnect to the internet to start tracking."
                       : calc.noExposure
-                        ? "Session unavailable until UV rises above 0."
-                        : "Timestamp-locked timer • MED-based limits • mL hydration"}
+                        ? "There's no sun to track right now — check back later."
+                        : "Live timer, flip reminders and hydration alerts."}
                   </p>
                 </div>
                 {canStartSession ? (

@@ -7,10 +7,10 @@ import {
   BellRing,
   Droplets,
   FlipHorizontal2,
-  Shield,
-  ShieldCheck,
   Square,
+  Sun,
   Timer,
+  TreePalm,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -23,7 +23,6 @@ import type { ActiveSessionState } from "@/utils/sessionTypes";
 import {
   calculateHydration,
   calculateSafeExposure,
-  calculateSedAbsorbed,
   remainingSafeMinutes,
   safeExposureProgressPercent,
   sunscreenLabel,
@@ -192,40 +191,29 @@ export function ActiveTracker() {
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="size-4 text-amber-500" strokeWidth={2} />
-                  Exposure budget
+                  <Sun className="size-4 text-amber-500" strokeWidth={2} />
+                  Your Sun Plan
                 </CardTitle>
-                {exposure?.capped ? <MaxSessionBadge /> : null}
+                {exposure?.capped ? <ShadeBadge /> : null}
               </div>
-              <CardDescription>MED-based safe limit · strict safety cap</CardDescription>
+              <CardDescription>How much longer is comfortable in the sun</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <ProgressRing
                 value={progressPct}
                 label={noExposure ? "—" : `${Math.round(safeLeft)}`}
-                sublabel={noExposure ? "no exposure" : "min left"}
+                sublabel={noExposure ? "no sun" : "min left"}
                 size={168}
                 stroke={7}
                 ringClassName="text-amber-500"
               />
               <div className="flex-1 space-y-3 text-sm">
-                <Row label="Total elapsed" value={formatElapsed(elapsedMs)} />
+                <Row label="Time in sun" value={formatElapsed(elapsedMs)} />
                 <Row
-                  label="Safe limit"
+                  label="Recommended"
                   value={
-                    noExposure ? "No exposure" : `${Math.round(exposure!.safeExposureMinutes)} min`
+                    noExposure ? "Wait for sun" : `${Math.round(exposure!.safeExposureMinutes)} min`
                   }
-                />
-                {exposure?.capped ? (
-                  <Row
-                    label="Uncapped formula"
-                    value={`${exposure.rawExposureMinutes} min`}
-                  />
-                ) : null}
-                <Row label="SED rate" value={`${exposure!.sedPerMinute.toFixed(3)} /min`} />
-                <Row
-                  label="Absorbed (est.)"
-                  value={`${calculateSedAbsorbed(exposure!.sedPerMinute, elapsedMinutes).toFixed(2)} SED`}
                 />
               </div>
             </CardContent>
@@ -260,19 +248,18 @@ export function ActiveTracker() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Droplets className="size-4 text-sky-500" strokeWidth={2} />
-              Fluid balance
+              Stay hydrated
             </CardTitle>
             <CardDescription>
-              Modelled loss {hydration?.fluidLossRateMlPerHour ?? 0} mL/h • Target{" "}
-              {hydration?.recommendedMl ?? 0} mL
+              Aim for about {hydration?.recommendedMl ?? 0} mL of water so far
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
-              <FluidStat label="Logged" value={`${active.waterMlLogged}`} unit="mL" />
-              <FluidStat label="Target" value={`${hydration?.recommendedMl ?? 0}`} unit="mL" />
+              <FluidStat label="You drank" value={`${active.waterMlLogged}`} unit="mL" />
+              <FluidStat label="Goal" value={`${hydration?.recommendedMl ?? 0}`} unit="mL" />
               <FluidStat
-                label="Deficit"
+                label="Still need"
                 value={`${hydration?.deficitMl ?? 0}`}
                 unit="mL"
                 warn={(hydration?.deficitMl ?? 0) > 100}
@@ -334,11 +321,11 @@ function FluidStat({
   );
 }
 
-function MaxSessionBadge() {
+function ShadeBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-      <ShieldCheck className="size-3" strokeWidth={2.5} />
-      Max Safe Session Reached
+      <TreePalm className="size-3" strokeWidth={2.5} />
+      Recommended: Move to Shade Soon
     </span>
   );
 }

@@ -108,6 +108,25 @@ export function sunscreenLabel(spf: SunscreenChoice): string {
   return `SPF ${spf}`;
 }
 
+/** Plain-language UV strength word for the UI (e.g. 7 → "High"). */
+export function uvLevelWord(uvIndex: number | null | undefined): string {
+  const uv = normalizeUvIndex(uvIndex);
+  if (uv <= 0) return "None";
+  if (uv < 3) return "Low";
+  if (uv < 6) return "Moderate";
+  if (uv < 8) return "High";
+  if (uv < 11) return "Very High";
+  return "Extreme";
+}
+
+/** Plain-language sea-swell word for the UI (e.g. 0.6 m → "Calm"). */
+export function swellLevelWord(waveHeightM: number | null | undefined): string {
+  if (waveHeightM == null) return "—";
+  if (waveHeightM < 0.75) return "Calm";
+  if (waveHeightM < 1.5) return "Moderate";
+  return "Rough";
+}
+
 export function getSpfBlockPercent(spf: SunscreenChoice): number {
   const blocked: Record<SunscreenChoice, number> = {
     none: 0,
