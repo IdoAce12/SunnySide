@@ -1,18 +1,25 @@
 {
-  "theme_color": "#FDFBF7",
-  "background_color": "#FDFBF7",
-  "display": "standalone",
-  "scope": "/",
-  "start_url": "/",
   "name": "SunnySide Premium Tracker",
   "short_name": "SunnySide",
   "description": "High-end sunbathing and marine exposure tracker",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FDFBF7",
+  "background_color": "#FDFBF7",
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512x512.png",

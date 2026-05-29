@@ -20,8 +20,6 @@ export interface SessionNotificationPlan {
   safeLimitMinutes: number;
   /** Flip cadence in minutes. */
   flipIntervalMinutes: number;
-  /** Hydration reminder cadence in minutes (derived from sweat rate). */
-  hydrationIntervalMinutes: number;
 }
 
 interface PlannedEvent {
@@ -29,6 +27,7 @@ interface PlannedEvent {
   title: string;
   body: string;
   tag: string;
+  action: string;
   requireInteraction?: boolean;
 }
 
@@ -77,34 +76,27 @@ function supportsTriggers(): boolean {
 }
 
 function buildEvents(plan: SessionNotificationPlan): PlannedEvent[] {
-  const { startedAt, safeLimitMinutes, flipIntervalMinutes, hydrationIntervalMinutes } = plan;
+  const { startedAt, safeLimitMinutes, flipIntervalMinutes } = plan;
   const events: PlannedEvent[] = [];
 
+  // Flip reminders only — no periodic hydration / text-update chatter.
   for (let k = 1; k * flipIntervalMinutes < safeLimitMinutes; k += 1) {
     events.push({
       at: startedAt + k * flipIntervalMinutes * 60_000,
       title: "Time to flip!",
       body: "Turn over to balance your exposure.",
       tag: `${TAG_PREFIX}-flip-${k}`,
+      action: "flip",
     });
   }
 
-  if (hydrationIntervalMinutes > 0) {
-    for (let k = 1; k * hydrationIntervalMinutes < safeLimitMinutes; k += 1) {
-      events.push({
-        at: startedAt + k * hydrationIntervalMinutes * 60_000,
-        title: "Hydration check",
-        body: "Drink ~250 mL of water to replace sweat loss.",
-        tag: `${TAG_PREFIX}-hydrate-${k}`,
-      });
-    }
-  }
-
+  // Session complete — the only other alert.
   events.push({
     at: startedAt + safeLimitMinutes * 60_000,
-    title: "Session finished — seek shade",
-    body: "Your safe limit is up. Get into the shade immediately.",
+    title: "Sun Plan Complete",
+    body: "Please move to the shade now.",
     tag: `${TAG_PREFIX}-finish`,
+    action: "shade",
     requireInteraction: true,
   });
 
@@ -112,12 +104,22 @@ function buildEvents(plan: SessionNotificationPlan): PlannedEvent[] {
 }
 
 function notificationOptions(event: PlannedEvent): NotificationOptions {
+  const isFinish = event.action === "shade";
   return {
     body: event.body,
     tag: event.tag,
     icon: "/icon-192x192.png",
     badge: "/icon-192x192.png",
+    // High-priority + actionable: wake the screen and require a tap.
     requireInteraction: event.requireInteraction ?? false,
+    renotify: true,
+    silent: false,
+    vibrate: isFinish ? [200, 100, 200, 100, 300] : [200, 100, 200],
+    actions: [
+      isFinish
+        ? { action: "shade", title: "Move to shade" }
+        : { action: "flip", title: "Flipped" },
+    ],
     data: { url: "/session" },
   };
 }

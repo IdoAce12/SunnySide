@@ -12,8 +12,17 @@ declare global {
     constructor(timestamp: number);
   }
 
+  interface SunnyNotificationAction {
+    action: string;
+    title: string;
+    icon?: string;
+  }
+
   interface NotificationOptions {
     showTrigger?: TimestampTrigger;
+    vibrate?: number | number[];
+    renotify?: boolean;
+    actions?: SunnyNotificationAction[];
   }
 
   interface GetNotificationOptions {

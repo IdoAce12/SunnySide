@@ -87,13 +87,6 @@ export function ActiveTracker() {
       })
     : null;
 
-  // Reminder cadence derived from sweat rate: time to lose ~250 mL, clamped 15–45 min.
-  const lossRatePerHour = hydration?.fluidLossRateMlPerHour ?? 500;
-  const hydrationIntervalMinutes = Math.min(
-    45,
-    Math.max(15, Math.round(15000 / Math.max(1, lossRatePerHour))),
-  );
-
   const { supported, permission, enableAlerts, clearSessionAlerts } =
     useSessionNotifications({
       startedAt: active?.startedAt ?? null,
@@ -101,7 +94,6 @@ export function ActiveTracker() {
       safeLimitMinutes: exposure?.safeExposureMinutes ?? 0,
       remainingMinutes: safeLeft,
       flipIntervalMinutes: flipInterval,
-      hydrationIntervalMinutes,
     });
 
   const logWater = (ml: number) => {
@@ -183,7 +175,6 @@ export function ActiveTracker() {
           permission={permission}
           onEnable={enableAlerts}
           flipIntervalMinutes={flipInterval}
-          hydrationIntervalMinutes={hydrationIntervalMinutes}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -335,13 +326,11 @@ function AlertsCard({
   permission,
   onEnable,
   flipIntervalMinutes,
-  hydrationIntervalMinutes,
 }: {
   supported: boolean;
   permission: PermissionState;
   onEnable: () => void;
   flipIntervalMinutes: number;
-  hydrationIntervalMinutes: number;
 }) {
   const granted = permission === "granted";
   const denied = permission === "denied";
@@ -364,10 +353,10 @@ function AlertsCard({
               {!supported
                 ? "This device does not support web notifications."
                 : granted
-                  ? `On — flip every ${flipIntervalMinutes} min · hydrate every ${hydrationIntervalMinutes} min · finish alert at your safe limit.`
+                  ? `On — quiet otherwise. We'll only ping you to flip every ${flipIntervalMinutes} min and when your Sun Plan is complete.`
                   : denied
                     ? "Blocked. Enable notifications for SunnySide in your browser settings."
-                    : "Get flip, hydration, and finish alerts even when your phone is locked."}
+                    : "Get a flip reminder and a finish alert — even when your phone is locked."}
             </p>
           </div>
         </div>

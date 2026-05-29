@@ -8,9 +8,15 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-/* Focus (or open) the app when a notification is tapped from the lock screen. */
+/* Dismiss-style actions ("Flipped" / "Move to shade") just close the alert. */
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
+  if (event.action === "flip" || event.action === "shade") {
+    // Acknowledge silently; no need to bring the app forward.
+    return;
+  }
+
   const url =
     (event.notification.data && event.notification.data.url) || "/session";
   event.waitUntil(

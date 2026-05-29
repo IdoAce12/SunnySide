@@ -23,7 +23,6 @@ interface UseSessionNotificationsArgs {
   /** Live remaining safe minutes, used to drive the home-screen badge. */
   remainingMinutes: number;
   flipIntervalMinutes: number;
-  hydrationIntervalMinutes: number;
 }
 
 export interface UseSessionNotificationsResult {
@@ -39,7 +38,6 @@ export function useSessionNotifications({
   safeLimitMinutes,
   remainingMinutes,
   flipIntervalMinutes,
-  hydrationIntervalMinutes,
 }: UseSessionNotificationsArgs): UseSessionNotificationsResult {
   const [permission, setPermission] = React.useState<PermissionState>("unsupported");
   const scheduledForRef = React.useRef<number | null>(null);
@@ -64,16 +62,8 @@ export function useSessionNotifications({
       startedAt,
       safeLimitMinutes,
       flipIntervalMinutes,
-      hydrationIntervalMinutes,
     });
-  }, [
-    enabled,
-    startedAt,
-    permission,
-    safeLimitMinutes,
-    flipIntervalMinutes,
-    hydrationIntervalMinutes,
-  ]);
+  }, [enabled, startedAt, permission, safeLimitMinutes, flipIntervalMinutes]);
 
   React.useEffect(() => {
     if (!enabled) return;
