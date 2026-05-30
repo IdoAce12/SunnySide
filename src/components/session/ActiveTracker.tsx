@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ProgressRing } from "@/components/ui/ProgressRing";
+import { HealthDisclaimer } from "@/components/ui/HealthDisclaimer";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { formatElapsed, useElapsedTime } from "@/hooks/useElapsedTime";
 import { useSessionNotifications } from "@/hooks/useSessionNotifications";
@@ -206,6 +207,7 @@ export function ActiveTracker() {
                     noExposure ? "Wait for sun" : `${Math.round(exposure!.safeExposureMinutes)} min`
                   }
                 />
+                <HealthDisclaimer className="!mt-4" />
               </div>
             </CardContent>
           </Card>

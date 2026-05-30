@@ -7,6 +7,8 @@ import { LocationPicker } from "@/components/dashboard/LocationPicker";
 import { PremiumMetrics } from "@/components/dashboard/PremiumMetrics";
 import { ProfileSetup } from "@/components/dashboard/ProfileSetup";
 import { ExposureEstimate } from "@/components/dashboard/ExposureEstimate";
+import { HealthGuidelines } from "@/components/dashboard/HealthGuidelines";
+import { getLocationLocalHour } from "@/utils/healthGuidelines";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { NetworkErrorCard } from "@/components/ui/NetworkErrorCard";
@@ -46,6 +48,7 @@ export function DashboardView() {
   });
 
   const hasError = status === "error";
+  const localHour = getLocationLocalHour(weather);
   const canStartSession =
     !!weather && !hasError && !calc.noExposure && !isZeroUvIndex(uvIndex);
 
@@ -76,6 +79,10 @@ export function DashboardView() {
       </header>
 
       <LocationPicker selected={location} onSelect={setLocation} />
+
+      {weather && !hasError ? (
+        <HealthGuidelines localHour={localHour} uvIndex={uvIndex} />
+      ) : null}
 
       <ErrorBoundary>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">

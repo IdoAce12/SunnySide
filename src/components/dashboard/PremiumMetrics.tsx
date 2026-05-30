@@ -5,6 +5,7 @@ import type { WeatherMarineSnapshot } from "@/utils/sessionTypes";
 import { swellLevelWord, uvLevelWord } from "@/utils/sunCalc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { MetricsGridSkeleton } from "@/components/ui/Skeleton";
+import { HealthDisclaimer } from "@/components/ui/HealthDisclaimer";
 import { cn } from "@/utils/cn";
 import type { WeatherStatus } from "@/hooks/useWeather";
 
@@ -80,6 +81,8 @@ export function PremiumMetrics({ status, weather, locationName }: PremiumMetrics
             />
           </div>
         )}
+
+        <HealthDisclaimer className="mt-4" />
       </CardContent>
     </Card>
   );
