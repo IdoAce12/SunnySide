@@ -355,7 +355,7 @@ function AlertsCard({
               {!supported
                 ? "This device does not support web notifications."
                 : granted
-                  ? `On — quiet otherwise. We'll only ping you to flip every ${flipIntervalMinutes} min and when your Sun Plan is complete.`
+                  ? `On — all reminders are pre-scheduled, so you'll get a flip alert every ${flipIntervalMinutes} min and a finish alert even with your phone locked.`
                   : denied
                     ? "Blocked. Enable notifications for SunnySide in your browser settings."
                     : "Get a flip reminder and a finish alert — even when your phone is locked."}

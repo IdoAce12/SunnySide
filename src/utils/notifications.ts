@@ -1,11 +1,13 @@
 /**
  * Background notification service for active sunbathing sessions.
  *
- * Uses the PWA service worker to surface lock-screen notifications. When the
- * browser supports Notification Triggers (`TimestampTrigger`) the alerts are
- * scheduled to fire even while the phone is locked / the tab is closed. On
- * browsers without triggers we fall back to in-page timers (fire while the app
- * is alive). The home-screen icon badge is updated via the App Badging API.
+ * Strategy: when the session starts we compute the ENTIRE timeline of alerts
+ * upfront and register them all at once with the OS via Notification Triggers
+ * (`TimestampTrigger`). This "multi-scheduled chain" survives the browser being
+ * frozen while the phone is locked — each alert fires at its exact timestamp
+ * without any live JS interval. Browsers without trigger support fall back to
+ * in-page timers (fire while the app is alive). The home-screen icon badge is
+ * updated via the App Badging API.
  */
 
 export type PermissionState = NotificationPermission | "unsupported";
@@ -75,26 +77,45 @@ function supportsTriggers(): boolean {
   );
 }
 
+/** Hebrew body text for a flip reminder, contextual to position in the session. */
+function flipBody(
+  minutesElapsed: number,
+  safeLimitMinutes: number,
+  flipIntervalMinutes: number,
+): string {
+  if (safeLimitMinutes - minutesElapsed === flipIntervalMinutes) {
+    return `עוד ${flipIntervalMinutes} דקות לסיום התוכנית.`;
+  }
+  if (minutesElapsed === flipIntervalMinutes) {
+    return `עברו ${minutesElapsed} דקות, תעבור צד לחשיפה מאוזנת.`;
+  }
+  return `עברו ${minutesElapsed} דקות בסך הכל.`;
+}
+
+/**
+ * Compute the full chain of timestamps for the whole session in one pass:
+ * a flip reminder every `flipIntervalMinutes`, then the completion alert at
+ * the capped Ministry of Health safety limit.
+ */
 function buildEvents(plan: SessionNotificationPlan): PlannedEvent[] {
   const { startedAt, safeLimitMinutes, flipIntervalMinutes } = plan;
   const events: PlannedEvent[] = [];
 
-  // Flip reminders only — no periodic hydration / text-update chatter.
   for (let k = 1; k * flipIntervalMinutes < safeLimitMinutes; k += 1) {
+    const minutesElapsed = k * flipIntervalMinutes;
     events.push({
-      at: startedAt + k * flipIntervalMinutes * 60_000,
-      title: "Time to flip!",
-      body: "Turn over to balance your exposure.",
+      at: startedAt + minutesElapsed * 60_000,
+      title: "זמן להתהפך!",
+      body: flipBody(minutesElapsed, safeLimitMinutes, flipIntervalMinutes),
       tag: `${TAG_PREFIX}-flip-${k}`,
       action: "flip",
     });
   }
 
-  // Session complete — the only other alert.
   events.push({
     at: startedAt + safeLimitMinutes * 60_000,
-    title: "Sun Plan Complete",
-    body: "Please move to the shade now.",
+    title: "התוכנית הסתיימה!",
+    body: "הגעת למכסה הבטוחה, נא להיכנס לצל מייד לפי הנחיות משרד הבריאות.",
     tag: `${TAG_PREFIX}-finish`,
     action: "shade",
     requireInteraction: true,
@@ -108,6 +129,8 @@ function notificationOptions(event: PlannedEvent): NotificationOptions {
   return {
     body: event.body,
     tag: event.tag,
+    lang: "he",
+    dir: "rtl",
     icon: "/icon-192x192.png",
     badge: "/icon-192x192.png",
     // High-priority + actionable: wake the screen and require a tap.
@@ -117,8 +140,8 @@ function notificationOptions(event: PlannedEvent): NotificationOptions {
     vibrate: isFinish ? [200, 100, 200, 100, 300] : [200, 100, 200],
     actions: [
       isFinish
-        ? { action: "shade", title: "Move to shade" }
-        : { action: "flip", title: "Flipped" },
+        ? { action: "shade", title: "מעבר לצל" }
+        : { action: "flip", title: "סימנתי" },
     ],
     data: { url: "/session" },
   };
@@ -166,6 +189,8 @@ export async function cancelScheduledSessionNotifications(): Promise<void> {
 
   const registration = await ensureServiceWorker();
   if (!registration) return;
+
+  // Clear from the page context...
   try {
     const notes = await registration.getNotifications({
       includeTriggered: true,
@@ -175,6 +200,13 @@ export async function cancelScheduledSessionNotifications(): Promise<void> {
       .forEach((n) => n.close());
   } catch {
     /* getNotifications unsupported — nothing to clear */
+  }
+
+  // ...and ask the service worker to clear them too (bulletproof early-finish).
+  try {
+    registration.active?.postMessage({ type: "clear-session-notifications" });
+  } catch {
+    /* postMessage unsupported — page-side clear already attempted */
   }
 }
 

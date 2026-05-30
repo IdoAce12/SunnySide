@@ -1,11 +1,35 @@
 /* SunnySide service worker — background notifications & lock-screen presence. */
 
+const SESSION_TAG_PREFIX = "sunnyside-session";
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
+});
+
+/* Close every scheduled/visible session alert (pending triggers included). */
+function clearSessionNotifications() {
+  return self.registration
+    .getNotifications({ includeTriggered: true })
+    .then((notes) => {
+      notes.forEach((note) => {
+        if (typeof note.tag === "string" && note.tag.startsWith(SESSION_TAG_PREFIX)) {
+          note.close();
+        }
+      });
+    })
+    .catch(() => {});
+}
+
+/* The app posts this when the user finishes a session early. */
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type === "clear-session-notifications") {
+    event.waitUntil(clearSessionNotifications());
+  }
 });
 
 /* Dismiss-style actions ("Flipped" / "Move to shade") just close the alert. */
